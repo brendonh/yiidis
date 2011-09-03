@@ -10,7 +10,6 @@ class FacebookConnection extends CApplicationComponent {
 
   public function init() {
     $this->conn = new Facebook($this->params['connection']);
-    Yii::log(print_r($this->appUserClass, true), "info");
     parent::init();
   }
 
@@ -57,7 +56,7 @@ class FacebookConnection extends CApplicationComponent {
   public function doLogin() {
     $app = Yii::app();
     $request = $app->getRequest();
-    $cb = $request->getBaseUrl() . $app->createUrl("facebook/afterLogin");
+    $cb = $request->getBaseUrl() . $app->createUrl("yiidis/facebook/afterLogin");
     $url = $this->conn->getLoginUrl(array('redirect_uri'=>$cb));
     $request->redirect($url);
   }
