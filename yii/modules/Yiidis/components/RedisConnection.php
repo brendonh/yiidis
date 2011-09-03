@@ -3,6 +3,22 @@
 class ObjectExistsException extends Exception {
 }
 
+
+class YiidisClient extends Predis\Client {
+
+  public $trace = false;
+  public $count = 0;
+
+  public function __call($method, $arguments) {    
+    $this->count++;
+    if ($this->trace) {
+      $args = CVarDumper::dumpAsString($arguments);
+      Yii::log("Redis: {$this->count} : $method : $args", "info");
+    }
+    return parent::__call($method, $arguments);
+  }
+}
+
 class RedisConnection extends CApplicationComponent {
 
   public $params;
@@ -11,9 +27,12 @@ class RedisConnection extends CApplicationComponent {
 
   public function init() {
     $profile = new Predis\Profiles\ServerVersion24();
-    $this->conn = new Predis\Client(
+    $this->conn = new YiidisClient(
       $this->params,
       array('profile'=>$profile, 'prefix'=>$this->params['prefix']));
+
+    if (isset($this->params['trace']) && $this->params['trace']) $this->conn->trace = true;
+
     parent::init();
   }
 
@@ -32,7 +51,6 @@ class RedisConnection extends CApplicationComponent {
 
     return true;
   }
-
 
 }
 
