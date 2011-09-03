@@ -1,0 +1,15 @@
+[
+  {phptask, [
+    {redis_prefix, <<"[project_name]:queue">>},
+    {yiic, "[/project/dir]/protected/yiic"}    
+  ]},
+
+  {lager, [
+    {handlers, [
+      {lager_console_backend, debug},
+      {lager_file_backend, [{"log/error.log", error}, {"log/console.log", info}]}
+    ]}
+   ]
+  }
+
+].

@@ -1,0 +1,13 @@
+{application, phptask,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  lager
+                 ]},
+  {mod, { pt_app, []}},
+  {env, []}
+ ]}.
