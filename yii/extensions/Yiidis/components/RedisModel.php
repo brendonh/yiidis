@@ -26,6 +26,7 @@ class RedisModel extends CFormModel {
     }
 
     $this->_dbAttributes = $attrs;   
+    parent::__construct();
   }
 
   public static function fromJSON($key, $json) {
@@ -41,7 +42,7 @@ class RedisModel extends CFormModel {
     }
 
     $obj = new $class($key, 'update');
-    $obj->init($data);
+    $obj->initFromData($data);
     return $obj;
   }
 
@@ -80,7 +81,7 @@ class RedisModel extends CFormModel {
 
   /* -------------------------------------------- */
 
-  public function init($data) {
+  public function initFromData($data) {
     foreach ($this->_dbAttributes as $attr) {
       if (isset($data[$attr])) {
         $this[$attr] = $data[$attr];

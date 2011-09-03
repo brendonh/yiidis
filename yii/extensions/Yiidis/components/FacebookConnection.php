@@ -6,15 +6,17 @@ class FacebookConnection extends CApplicationComponent {
 
   public $params;
   public $conn;
+  public $appUserClass;
 
   public function init() {
     $this->conn = new Facebook($this->params['connection']);
+    Yii::log(print_r($this->appUserClass, true), "info");
     parent::init();
   }
 
   public function getUser() {
     $sessionID = Yii::app()->session->sessionID;
-    $session = Session::ensure($sessionID);
+    $session = RedisSession::ensure($sessionID);
 
     if ($session->userID) {
       return $session->getUser();
@@ -35,12 +37,12 @@ class FacebookConnection extends CApplicationComponent {
     }
 
     $userKey = 'fb:' . $info['id'];
-    $user = User::ensure($userKey);
+    $user = FacebookUser::ensure($userKey);
 
     $user->name = $info['name'];
     $user->put();
 
-    $profile = Profile::ensure($userKey);
+    $profile = FacebookProfile::ensure($userKey);
     $profile->info = $info;
     $profile->friends = $friends;
     $profile->updateFriendCache();

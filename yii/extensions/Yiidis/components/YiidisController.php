@@ -17,7 +17,7 @@ class YiidisController extends CController {
 
     public function getSession() {
       $sessionID = Yii::app()->session->sessionID;
-      return Session::ensure($sessionID);
+      return YiidisSession::ensure($sessionID);
     }
 
 }
