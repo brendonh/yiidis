@@ -28,8 +28,14 @@ class RedisModel extends CFormModel {
     $this->_dbAttributes = $attrs;   
   }
 
-  public static function fromJSON($key, $json) {
+  public static function fromJSON($key, $json, $skipPrefix = false) {
     $class = get_called_class();
+    
+    if ($skipPrefix) {
+        // gets rid of the prefix
+        $key = substr($key, strlen ($class::$_keyPrefix) + 1);
+    }
+    
     $compressed = substr($json, 0, 1);
     if ($compressed == 'c') {
       $json = gzinflate(substr($json, 1));
@@ -56,7 +62,7 @@ class RedisModel extends CFormModel {
     if (!$json) {
       throw new RedisNoObject($key);
     }
-    return $class::fromJSON($key, $json);
+    return $class::fromJSON($key, $json, $skipPrefix);
   }
 
   public static function ensure($key) {
