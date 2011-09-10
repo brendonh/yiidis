@@ -5,7 +5,7 @@ class SessionNoUser extends Exception {}
 class RedisSession extends RedisModel {
 
   public static $_keyPrefix = 'session';
-  public static $_expire = 120;
+  public static $_expire = 3600;
 
   public $_user;
 
