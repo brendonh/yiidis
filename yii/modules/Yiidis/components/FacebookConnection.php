@@ -18,7 +18,7 @@ class FacebookConnection extends CApplicationComponent {
     $session = RedisSession::ensure($sessionID);
 
     if ($session->userID) {
-      return $session->getUser();
+       return $session->getUser();
     }
 
     $fbUser = $this->conn->getUser();

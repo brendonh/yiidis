@@ -22,7 +22,7 @@ class YiidisController extends CController {
 
     public function getSession() {
       $sessionID = Yii::app()->session->sessionID;
-      return YiidisSession::ensure($sessionID);
+      return RedisSession::ensure($sessionID);
     }
 
 }
