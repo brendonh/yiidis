@@ -13,13 +13,16 @@ class FacebookConnection extends CApplicationComponent {
     parent::init();
   }
 
-  public function getUser() {
+  public function getUser($login=true) {
+
     $sessionID = Yii::app()->session->sessionID;
     $session = RedisSession::ensure($sessionID);
 
     if ($session->userID) {
-       return $session->getUser();
+      return $session->getUser();
     }
+
+    if (!$login) return null;
 
     $fbUser = $this->conn->getUser();
 
@@ -57,6 +60,14 @@ class FacebookConnection extends CApplicationComponent {
     $app = Yii::app();
     $request = $app->getRequest();
     $cb = $request->getBaseUrl() . $app->createUrl("yiidis/facebook/afterLogin");
+    $url = $this->conn->getLoginUrl(array('redirect_uri'=>$cb));
+    $request->redirect($url);
+  }
+
+  public function doLogout() {
+    $app = Yii::app();
+    $request = $app->getRequest();
+    $cb = $request->getBaseUrl() . $app->createUrl("yiidis/facebook/afterLogout");
     $url = $this->conn->getLoginUrl(array('redirect_uri'=>$cb));
     $request->redirect($url);
   }
