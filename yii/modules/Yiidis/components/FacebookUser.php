@@ -13,5 +13,4 @@ class FacebookUser extends RedisModel {
       $this->attachBehavior("appUserClass", $userClass);
     }
   }
-
 }
