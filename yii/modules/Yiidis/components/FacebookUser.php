@@ -10,5 +10,4 @@ class FacebookUser extends RedisModel {
     $userClass = Yii::app()->params->appUserClass;
     $this->attachBehavior("appUserClass", $userClass);
   }
-
 }
