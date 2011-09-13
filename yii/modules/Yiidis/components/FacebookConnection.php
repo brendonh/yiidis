@@ -7,16 +7,26 @@ class FacebookConnection extends CApplicationComponent {
   public $params;
   public $conn;
   public $appUserClass;
+  public $breakFrame = true;
+
+  public $_session;
 
   public function init() {
     $this->conn = new Facebook($this->params['connection']);
     parent::init();
   }
 
+  public function getSession() {
+    if (!$this->_session) {
+      $sessionID = Yii::app()->session->sessionID;
+      $this->_session = RedisSession::ensure($sessionID);
+    }
+    return $this->_session;
+  }
+
   public function getUser($login=true) {
 
-    $sessionID = Yii::app()->session->sessionID;
-    $session = RedisSession::ensure($sessionID);
+    $session = $this->getSession();
 
     if ($session->userID) {
       return $session->getUser();
@@ -32,6 +42,7 @@ class FacebookConnection extends CApplicationComponent {
 
     try {
       $info = $this->conn->api('/me');
+      $perms = $this->conn->api('/me/permissions');
       $friends = $this->conn->api('/me/friends');
       $friends = $friends['data'];
     } catch (FacebookApiException $e) {
@@ -42,6 +53,7 @@ class FacebookConnection extends CApplicationComponent {
     $user = FacebookUser::ensure($userKey);
 
     $user->name = $info['name'];
+    $user->perms = array_keys($perms['data'][0]);
     $user->put();
 
     $profile = FacebookProfile::ensure($userKey);
@@ -56,15 +68,37 @@ class FacebookConnection extends CApplicationComponent {
     return $user;
   }
 
-  public function doLogin() {
+  public function doLogin($scope=array()) {
+    $session = $this->getSession();
+    $session->clearUser();
+
     $app = Yii::app();
-    $request = $app->getRequest();
-    $cb = $request->getBaseUrl() . $app->createUrl("yiidis/facebook/afterLogin");
-    $url = $this->conn->getLoginUrl(array('redirect_uri'=>$cb));
-    $request->redirect($url);
+
+    if ($this->breakFrame) {
+      $app->request->redirect($app->createUrl("yiidis/facebook/login", array('scope'=>implode(",", $scope))));
+    } else {
+      $app->request->redirect($this->getLoginUrl($scope));
+    }
+  }
+
+  public function getLoginUrl($scope=array(), $appRedirect=false) {
+      $app = Yii::app();
+      $request = $app->getRequest();
+      
+      if ($appRedirect) {
+        $cb = $this->params['appUrl'];
+      } else {
+        $cb = $request->getBaseUrl() . $app->createUrl("yiidis/facebook/afterLogin");
+      }
+
+      $strScope = implode(",", $scope);
+      return $this->conn->getLoginUrl(array('redirect_uri'=>$cb, 'scope'=>$strScope));
   }
 
   public function doLogout() {
+    $session = $this->getSession();
+    $session->clearUser();
+
     $app = Yii::app();
     $request = $app->getRequest();
     $cb = $request->getBaseUrl() . $app->createUrl("yiidis/facebook/afterLogout");

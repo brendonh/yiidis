@@ -21,7 +21,13 @@ class RedisSession extends RedisModel {
     }
 
     return $this->_user;
+  }
 
+  public function clearUser() {
+    if ($this->userID) {
+      $this->userID = null;
+      $this->put();
+    }
   }
 
 }

@@ -5,6 +5,7 @@ class FacebookUser extends RedisModel {
   public static $_keyPrefix = 'user';
 
   public $name;
+  public $perms;
 
   public function afterConstruct() {
     if (isset(Yii::app()->params->appUserClass)) { 
