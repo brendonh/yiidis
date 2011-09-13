@@ -52,6 +52,17 @@ class RedisModel extends CFormModel {
     return $obj;
   }
 
+  public static function fromJSONArray($keysAndBlobs, $skipPrefix=false) {
+    $class = get_called_class();
+    $objs = array();
+
+    for ($i = 0; $i < count($keysAndBlobs); $i += 2) {
+      $objs[] = $class::fromJSON($keysAndBlobs[$i], $keysAndBlobs[$i+1], $skipPrefix);
+    }
+
+    return $objs;
+  }
+
   public static function get($key, $skipPrefix=false) {
     $class = get_called_class();
     if ($skipPrefix) {

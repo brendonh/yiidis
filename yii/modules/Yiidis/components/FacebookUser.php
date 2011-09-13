@@ -7,7 +7,9 @@ class FacebookUser extends RedisModel {
   public $name;
 
   public function afterConstruct() {
-    $userClass = Yii::app()->params->appUserClass;
-    $this->attachBehavior("appUserClass", $userClass);
+    if (isset(Yii::app()->params->appUserClass)) { 
+      $userClass = Yii::app()->params->appUserClass;
+      $this->attachBehavior("appUserClass", $userClass);
+    }
   }
 }

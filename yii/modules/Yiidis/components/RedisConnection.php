@@ -19,6 +19,7 @@ class YiidisClient extends Predis\Client {
   }
 }
 
+
 class RedisConnection extends CApplicationComponent {
 
   public $params;
@@ -46,6 +47,7 @@ class RedisConnection extends CApplicationComponent {
         throw new ObjectExistsException($key);
     } else {
       if (!$this->conn->set($key, $val))
+        // Wrong. What should this throw?
         throw new ObjectExistsException($key);
     }
 

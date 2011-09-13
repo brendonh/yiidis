@@ -11,4 +11,9 @@ class FacebookController extends YiidisController {
     Yii::app()->request->redirect("/");
   }
 
+  public function actionAfterLogout() {
+    Yii::log("Facebook logout successful", "info");
+    Yii::app()->request->redirect("/");
+  }
+
 }
