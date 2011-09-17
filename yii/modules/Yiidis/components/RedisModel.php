@@ -29,6 +29,14 @@ class RedisModel extends CFormModel {
     parent::__construct();
   }
 
+  public static function unpackJSON($json) {
+    $compressed = substr($json, 0, 1);
+    if ($compressed == 'c') {
+      $json = gzinflate(substr($json, 1));
+    }
+    return $json;
+  }
+
   public static function fromJSON($key, $json, $skipPrefix = false) {
     $class = get_called_class();
     
@@ -37,12 +45,9 @@ class RedisModel extends CFormModel {
         $key = substr($key, strlen ($class::$_keyPrefix) + 1);
     }
     
-    $compressed = substr($json, 0, 1);
-    if ($compressed == 'c') {
-      $json = gzinflate(substr($json, 1));
-    }
-
+    $json = $class::unpackJSON($json);
     $data = json_decode($json, true);
+
     if ($data === null) {
       throw new RedisNotJSON($key . ' :: ' . $data);
     }
@@ -63,7 +68,7 @@ class RedisModel extends CFormModel {
     return $objs;
   }
 
-  public static function get($key, $skipPrefix=false) {
+  public static function getJSON($key, $skipPrefix=false) {
     $class = get_called_class();
     if ($skipPrefix) {
       $fullKey = $key;
@@ -74,7 +79,19 @@ class RedisModel extends CFormModel {
     if (!$json) {
       throw new RedisNoObject($key);
     }
+    return $json;
+  }
+
+  public static function get($key, $skipPrefix=false) {
+    $class = get_called_class();
+    $json = $class::getJSON($key, $skipPrefix);
     return $class::fromJSON($key, $json, $skipPrefix);
+  }
+
+  public static function getArray($key, $skipPrefix=false) {
+    $class = get_called_class();
+    $json = $class::getJSON($key);
+    return  json_decode($class::unpackJSON($json), true);
   }
 
   public static function ensure($key) {
@@ -105,7 +122,6 @@ class RedisModel extends CFormModel {
       }
     }
   }
-
 
   public function redisKey() {
     $class = get_called_class();
@@ -147,6 +163,30 @@ class RedisModel extends CFormModel {
 
     Yii::app()->redis->conn->expire($this->redisKey(), $class::$_expire);
   }
+
+  /* -------------------------------------------- */
+
+  public function transact($fun) {
+    function errorException($errno, $errstr, $errfile, $errline) {
+      throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+    }
+    set_error_handler("errorException");
+
+    try {
+      $return = $fun($this);
+    } catch(Exception $e) {
+      Yii::log("DISCARDING", "info");
+      try {
+        Yii::app()->redis->conn->discard();
+      } catch (Predis\ServerException $_) {}
+      restore_error_handler();
+      throw $e;
+    }
+
+    restore_error_handler();
+    return $return;
+  }
+
 
 }
 

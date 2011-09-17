@@ -7,7 +7,7 @@ class FacebookConnection extends CApplicationComponent {
   public $params;
   public $conn;
   public $appUserClass;
-  public $breakFrame = true;
+  public $breakFrame = false;
 
   public $_session;
 
