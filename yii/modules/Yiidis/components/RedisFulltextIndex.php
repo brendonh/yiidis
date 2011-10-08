@@ -18,32 +18,47 @@ class RedisFulltextIndex {
   }
 
   public function index($key, $phrase) {
+
     $scores = $this->analyze($phrase);
-    foreach($scores as $fragment=>$score) {
+    foreach($scores as $fragment=>$score) 
+      Yii::app()->redis->conn->zadd(
+                    $this->redisKey("e", $fragment),
+                    $score, $key);
+
+    $scores = $this->analyze($phrase, true);
+    foreach($scores as $fragment=>$score)
       Yii::app()->redis->conn->zadd(
                     $this->redisKey("f", $fragment),
                     $score, $key);
-    }
+
   }
 
-  public function search($phrase, $offset=0, $limit=20) {
-    $scores = $this->analyze($phrase);
+  public function search($phrase, $offset=0, $limit=20, $options=array()) {
+    $refresh = isset($options['refresh']) && $options['refresh'];
+    $and = !(isset($options['and']) && !$options['and']);
+    $fuzzy = isset($options['fuzzy']) && $options['fuzzy'];
+
+    $scores = $this->analyze($phrase, $fuzzy);
     $keys = array_keys($scores);
     sort($keys);
     $key = implode("-", $keys);
     $searchKey = $this->redisKey("s", $key);
     $conn = Yii::app()->redis->conn;
 
-    if (!$conn->expire($searchKey, $this->cacheTime)) {
+    if ($refresh || !$conn->expire($searchKey, $this->cacheTime)) {
       $args = array();
       $weights = array();
+
+      $indexPrefix = $fuzzy ? "f" : "e";
       foreach($scores as $key => $score) {
-        $args[] = $this->redisKey("f", $key);
+        $args[] = $this->redisKey($indexPrefix, $key);
         $weights[] = strlen($key) * $score;
       }
       
       $args = array($searchKey, $args, $weights);
-      $command = $conn->createCommand("zunionstore", $args);
+
+      $commandName = $and ? "zinterstore" : "zunionstore";
+      $command = $conn->createCommand($commandName, $args);
       $conn->executeCommand($command);
       $conn->expire($searchKey, $this->cacheTime);
     }
@@ -51,7 +66,7 @@ class RedisFulltextIndex {
     return $results;
   }
 
-  public function analyze($phrase) {
+  public function analyze($phrase, $fuzzy=false) {
     $phrase = preg_replace('/[^\p{L}\p{N}\p{Z}]/u', '', strtolower($phrase));
 
     $words = preg_split('/[\p{Z}]/u', $phrase);
@@ -59,10 +74,9 @@ class RedisFulltextIndex {
     $scores = array();
     foreach($words as $word) {
       if (in_array($word, $this->stopwords)) continue;
-      list($a, $b) = double_metaphone(stem($word));
-      if (!$a) $a = $word;
-      $scores[$a] = isset($scores[$a]) ? $scores[$a]+1 : 1;
-      if ($b != $a) isset($scores[$b]) ? $scores[$b]+1 : 1;
+
+      if ($fuzzy) $word = metaphone(stem($word));
+      $scores[$word] = isset($scores[$word]) ? $scores[$word]+1 : 1;
     }
 
     return $scores;
