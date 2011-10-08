@@ -68,6 +68,30 @@ class RedisModel extends CFormModel {
     return $objs;
   }
 
+  public static function fromJSONArrays($keys, $blobs, $skipPrefix=false) {
+    $class = get_called_class();
+    $objs = array();
+
+    for ($i = 0; $i < count($keys); $i ++) {
+      $objs[] = $class::fromJSON($keys[$i], $blobs[$i], $skipPrefix);
+    }
+
+    return $objs;
+  }
+
+  public static function fromKeyArray($keys, $skipPrefix=false) {
+    $class = get_called_class();
+
+    if ($skipPrefix) {
+      $getKeys = $keys;
+    } else {
+      $getKeys = array_map(function($k) use ($class) { return "{$class::$_keyPrefix}:$k"; }, $keys);
+    }
+    
+    $blobs = Yii::app()->redis->conn->mget($getKeys);
+    return $class::fromJSONArrays($keys, $blobs);
+  }
+
   public static function getJSON($key, $skipPrefix=false) {
     $class = get_called_class();
     if ($skipPrefix) {
@@ -103,14 +127,12 @@ class RedisModel extends CFormModel {
     }
   }
 
-
   public static function model($className=__CLASS__) {
     if (isset(self::$_models[$className])) 
       return self::$_models[$className];
 
     $model = self::$_models[$className] = new $className(null, null);
     return $model;
-    
   }
 
   /* -------------------------------------------- */
