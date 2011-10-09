@@ -6,6 +6,7 @@ class FacebookUser extends RedisModel {
 
   public $name;
   public $perms;
+  public $popeName;
 
   public function afterConstruct() {
     if (isset(Yii::app()->params->appUserClass)) { 
