@@ -53,6 +53,7 @@ class FacebookConnection extends CApplicationComponent {
     $user = FacebookUser::ensure($userKey);
 
     $user->name = $info['name'];
+    $user->id = $info['id'];
     $user->perms = array_keys($perms['data'][0]);
     $user->put();
 
