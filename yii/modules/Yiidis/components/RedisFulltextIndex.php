@@ -75,7 +75,7 @@ class RedisFulltextIndex {
     foreach($words as $word) {
       if (in_array($word, $this->stopwords)) continue;
 
-      if ($fuzzy) $word = metaphone(stem($word));
+      if ($fuzzy) $word = stem($word);
       $scores[$word] = isset($scores[$word]) ? $scores[$word]+1 : 1;
     }
 
