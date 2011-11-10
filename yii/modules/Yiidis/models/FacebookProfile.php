@@ -15,7 +15,7 @@ class FacebookProfile extends RedisModel {
     }
     $cacheKey = 'friends:' . $this->_key;
     Yii::app()->redis->conn->del($cacheKey);
-    Yii::app()->redis->conn->lpush($cacheKey, $friendIDs);
+    Yii::app()->redis->conn->sadd($cacheKey, $friendIDs);
   }
 
 }

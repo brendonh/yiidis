@@ -2,6 +2,7 @@
 
 class RedisNoObject extends Exception {}
 class RedisNotJSON extends Exception {}
+class RedisIllegalMultiGet extends Exception {}
 
 class RedisModel extends CFormModel {
 
@@ -10,6 +11,7 @@ class RedisModel extends CFormModel {
   public static $_keyPrefix = "misc";
   public static $_expire;
   public static $_compress = false;
+  public static $_archive = false;
 
   public $_key;
   public $_scenario;
@@ -82,6 +84,10 @@ class RedisModel extends CFormModel {
   public static function fromKeyArray($keys, $skipPrefix=false) {
     $class = get_called_class();
 
+    if ($class::$_archive) {
+      throw new RedisIllegalMultiGet("Class is archived: $class");
+    }
+
     if ($skipPrefix) {
       $getKeys = $keys;
     } else {
@@ -100,10 +106,22 @@ class RedisModel extends CFormModel {
       $fullKey = $class::$_keyPrefix . ':' . $key;
     }
     $json = Yii::app()->redis->get($fullKey);
-    if (!$json) {
-      throw new RedisNoObject($key);
+
+    if ($json) return $json;
+
+    if ($class::$_archive) {
+      $json = Yii::app()->archiver->get($fullKey);
+      if ($json) {
+        Yii::log("Caching $fullKey");
+        Yii::app()->redis->conn->set($fullKey, $json);
+        if ($class::$_expire) {
+          Yii::app()->redis->conn->expire($fullKey, $class::$_expire);
+        }
+        return $json;
+      }
     }
-    return $json;
+
+    throw new RedisNoObject($key);
   }
 
   public static function get($key, $skipPrefix=false) {
@@ -167,13 +185,18 @@ class RedisModel extends CFormModel {
       $data = $json;
     }
 
-    Yii::app()->redis->set($this->redisKey(), 
-                           $data, 
-                           $this->_scenario);
+    $key = $this->redisKey();
+
+    Yii::app()->redis->set($key, $data, $this->_scenario);
 
     if ($class::$_expire) {
-      Yii::app()->redis->conn->expire($this->redisKey(), $class::$_expire);
+      Yii::app()->redis->conn->expire($key, $class::$_expire);
     }
+
+    if ($class::$_archive) {
+      Yii::app()->archiver->put($key, $data);
+    }
+
   }
 
   public function touch() {
