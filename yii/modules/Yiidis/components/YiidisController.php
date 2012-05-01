@@ -8,7 +8,7 @@ class YiidisController extends CController {
   public function beforeAction() {
     if (isset($_GET['state']) && strstr(Yii::app()->request->getUrlReferrer(), 'facebook.com')) {
       $this->getUser(true);
-      $this->redirect(array('yiidis/facebook/cleanupUrl'));
+      $this->redirect(array('facebook/cleanupUrl'));
     }
     return $this->getUser();
   }
